@@ -2,6 +2,7 @@
 
 USE metro_cdmx;
 
+-- Notemos que en lines el id y los timestamp se autogeneran
 CREATE TABLE `lines` (
 
     `id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
