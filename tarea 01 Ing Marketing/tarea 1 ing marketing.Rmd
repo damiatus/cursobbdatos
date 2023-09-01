@@ -1,0 +1,434 @@
+---
+title: "Tarea 1 Ing. Marketing"
+author: "Joaquín Urbina, Santiago Del Río, Ángelo León, Damián De Aguiar"
+output:
+  html_document: default
+  pdf_document: default
+date: "2023-08-28"
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE) 
+
+```
+
+# Preparando el entorno
+
+#### Hacemos las importnaciones necesarias:
+
+```{r , include=FALSE, echo=FALSE}
+#rm(list = ls())  # Esto eliminará todas las variables del entorno
+#install.packages("skimr")
+#install.packages("tinytex")
+#install.packages("DT")
+#install.packages("kableExtra")
+#install.packages("reticulate")
+#install.packages("ggplot2")
+#install.packages("dplyr")
+#install.packages("kableExtra")
+#install.packages("gt")
+#install.packages("xtable")
+library(gt)
+library(tinytex)
+#library(kableExtra)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(skimr)
+library(lubridate)
+library(stats)
+library(DT)
+library(tidyr)
+
+
+set.seed(123)
+setwd("C:/Users/crrfo/Desktop/tarea 01 Ing Marketing") #Seteamos el directorio de trabajo local
+```
+
+#### Leemos la base de datos
+
+Son 248000 obsrevaciones
+- Separar por rubro
+- Seaprar por panedmia si y pandemia no
+- Comprar por ingreso por hora ya que + horas, + ingreso
+- 
+```{r}
+
+ventas <- read.csv("mersample.csv", sep = ";")
+head(ventas)
+```
+```{r}
+skim(ventas)
+```
+
+```{r}
+# Crear el gráfico de distribución
+ggplot(data = ventas, aes(x = ingreso)) +
+  geom_histogram(binwidth = 25000, fill = "blue", color = "black") +
+  labs(title = "Distribución de Ingresos", x = "Ingresos", y = "Frecuencia")
+```
+```{r}
+# Calcular los límites de los bigotes (whiskers) para definir los outliers
+q1 <- quantile(ventas$ingreso, 0.25)
+q3 <- quantile(ventas$ingreso, 0.75)
+iqr <- q3 - q1
+lower_fence <- q1 - 1.5 * iqr
+upper_fence <- q3 + 1.5 * iqr
+
+# Filtrar los datos para excluir los outliers
+ventas_filtradas <- ventas %>% filter(ingreso >= lower_fence, ingreso <= upper_fence)
+
+# Crear el gráfico de distribución sin outliers
+ggplot(data = ventas_filtradas, aes(x = ingreso)) +
+  geom_histogram(binwidth = 25000, fill = "blue", color = "black") +
+   scale_x_continuous(labels = scales::label_number(scale = 1e-0, suffix = " Mil"))  +
+  labs(title = "Distribución de Ingresos (Sin Outliers)", x = "Ingresos", y = "Frecuencia")
+```
+
+#### Estadísticas pricnipales con outliers
+```{r, echo=FALSE}
+## Con outliers
+# Obtener los principales datos estadísticos de la variable 'income'
+summary_stats <- summary(ventas$ingreso)
+
+# Imprimir los resultados
+cat("Resumen estadístico de ingreso:\n")
+print(summary_stats)
+```
+#### Estadísticas pricnipales sin outliers
+
+```{r, echo=FALSE}
+# Calcular el rango intercuartil (IQR)
+Q1 <- quantile(ventas$ingreso, 0.25)
+Q3 <- quantile(ventas$ingreso, 0.75)
+IQR <- Q3 - Q1
+
+# Definir límites para identificar outliers
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+
+# Filtrar los datos para quitar outliers
+rentas_filtradas <- ventas %>% filter(ingreso >= lower_bound & ingreso <= upper_bound)
+
+# Obtener los principales datos estadísticos de la variable 'income' sin outliers
+summary_stats <- summary(rentas_filtradas$ingreso)
+
+
+# Imprimir los resultados
+cat("Resumen estadístico de income sin outliers:\n")
+print(summary_stats)
+
+```
+#### Valores faltantes:
+```{r}
+# Calcular la cantidad de valores faltantes en ventas
+missing_ventas <- colSums(is.na(ventas))
+missing_ventas
+```
+
+
+#### Frecuencia por edad, tomaría sobre 28 y bajo 60
+```{r}
+
+# Obtener la tabla de frecuencias de edad
+tabla_frecuencias_edad <- table(ventas$edad)
+
+# Imprimir la tabla de frecuencias
+#tabla_frecuencias_edad
+
+# Suponiendo que tienes la tabla de frecuencias tabla_frecuencias_edad
+
+# Convertir la tabla de frecuencias en un vector
+frecuencias <- as.vector(tabla_frecuencias_edad)
+
+# Obtener los valores únicos de la columna de edad (nombres de las barras)
+edades <- as.numeric(names(tabla_frecuencias_edad))
+
+# Crear el gráfico de barras
+barplot(frecuencias, names.arg = edades, xlab = "Edad", ylab = "Frecuencia",
+        main = "Gráfico de Frecuencia por Edad", col = "blue")
+```
+
+```{r}
+summary(ventas$genero)
+```
+
+### Verificamos integridad de datos de genero
+```{r}
+if (length(unique(ventas$genero)) > 2) {
+  cat("La variable dummy_column tiene más de dos valores únicos.\n")
+  # Aquí puedes realizar acciones adicionales de limpieza si es necesario
+} else {
+  cat("La variable dummy_column tiene dos o menos valores únicos.\n")
+  # Aquí puedes tomar decisiones en función de esta información
+}
+```
+
+
+```{r}
+
+
+# Creamos los datos agregados de ingreso separados por edad
+ingreso_agregados <- aggregate(ingreso ~ edad + genero, data = ventas, FUN = mean)
+
+# Generar el gráfico de líneas con estilo modificado
+ggplot(data = ingreso_agregados, aes(x = edad, y = ingreso, color = factor(genero))) +
+  geom_line(size = 1) +  # Usamos geom_line en lugar de geom_bar
+  geom_vline(xintercept = c(60, 65), linetype = "dashed") +
+  labs(title = "Ingreso total semanal vs Edad por Sexo (0 hombre, 1 mujer)",
+       x = "Edad", y = "Ingreso") +
+  theme_minimal() +
+  scale_color_manual(values = c("#F8766D", "#00BFC4")) +  # Colores personalizados para 0 y 1
+  scale_y_continuous(labels = scales::label_number(scale = 1e-0, suffix = "K")) +
+  theme(legend.title = element_blank())  # Eliminamos título de la leyenda
+
+```
+```{r echo=FALSE}
+# Creamos los datos agregados de ingreso separados por edad
+ingreso_agregados <- aggregate(ingreso_hr ~ edad + genero, data = ventas, FUN = mean)
+
+# Generar el gráfico de líneas con estilo modificado
+ggplot(data = ingreso_agregados, aes(x = edad, y = ingreso_hr, color = factor(genero))) +
+  geom_line(size = 1) +  # Usamos geom_line en lugar de geom_bar
+  geom_vline(xintercept = c(60, 65), linetype = "dashed") +
+  labs(title = "Ingreso/h vs Edad por Sexo (0 hombre, 1 mujer)",
+       x = "Edad", y = "Ingreso") +
+  theme_minimal() +
+  scale_color_manual(values = c("#F8766D", "#00BFC4")) +  # Colores personalizados para 0 y 1
+ 
+  theme(legend.title = element_blank())  # Eliminamos título de la leyenda
+
+```
+```{r}
+
+# Creamos los datos agregados de ingreso separados por edad
+ingreso_agregados <- aggregate(hrs_trabajadas ~ edad + genero, data = ventas, FUN = mean)
+
+# Generar el gráfico de líneas con estilo modificado
+ggplot(data = ingreso_agregados, aes(x = edad, y = hrs_trabajadas, color = factor(genero))) +
+  geom_line(size = 1) +  # Usamos geom_line en lugar de geom_bar
+  geom_vline(xintercept = c(60, 65), linetype = "dashed") +
+  labs(title = "Horas semanales trabajadas vs Edad por Sexo (0 hombre, 1 mujer)",
+       x = "Edad", y = "Horas") +
+  theme_minimal() +
+  scale_color_manual(values = c("#F8766D", "#00BFC4")) +  # Colores personalizados para 0 y 1
+ 
+  theme(legend.title = element_blank())  # Eliminamos título de la leyenda
+
+```
+```{r}
+calcular_promedio_ingreso <- function(data) {
+  promedio_mujeres <- mean(data$ingreso[data$genero == 1], na.rm = TRUE)
+  promedio_hombres <- mean(data$ingreso[data$genero == 0], na.rm = TRUE)
+  
+  resultados <- data.frame(
+    Genero = c("Hombre", "Mujer"),
+    Promedio_Ingreso = c(promedio_hombres, promedio_mujeres)
+  )
+  
+  return(resultados)
+}
+
+# Llamada a la función y obtención de resultados
+resultados_promedio_ingreso <- calcular_promedio_ingreso(ventas)
+print(resultados_promedio_ingreso)
+
+```
+
+```{r}
+table(ventas$rubro)
+```
+```{r}
+
+# Creamos los datos agregados de ingreso separados por edad y genero
+ingreso_agregados <- aggregate(ingreso ~ edad + genero + rubro, data = ventas, FUN = mean)
+
+# Filtrar los casos donde el rubro sea "Alimentos y Abarrotes"
+ingreso_agregados <- ingreso_agregados[ingreso_agregados$rubro == "Alimentos y Abarrotes", ]
+
+# Generar el gráfico de líneas con estilo modificado
+ggplot(data = ingreso_agregados, aes(x = edad, y = ingreso, color = factor(genero))) +
+  geom_line(size = 1) +  # Usamos geom_line en lugar de geom_bar
+  geom_vline(xintercept = c(60, 65), linetype = "dashed") +
+  labs(title = "Ingreso total semanal vs Edad por Sexo (0 hombre, 1 mujer) - Rubro: Alimentos y Abarrotes",
+       x = "Edad", y = "Ingreso") +
+  theme_minimal() +
+  scale_color_manual(values = c("#F8766D", "#00BFC4")) +  # Colores personalizados para 0 y 1
+  scale_y_continuous(labels = scales::label_number(scale = 1e-0, suffix = "K")) +
+  theme(legend.title = element_blank())  # Eliminamos título de la leyenda
+
+```
+
+```{r}
+
+
+# Creamos los datos agregados de ingreso separados por edad y genero
+ingreso_agregados <- aggregate(ingreso ~ edad + genero + rubro, data = ventas, FUN = mean)
+
+# Filtrar los casos donde el rubro sea "Comida Rápida Oficios y Otros Servicios"
+ingreso_agregados <- ingreso_agregados[ingreso_agregados$rubro == "Comida Rápida Oficios y Otros Servicios", ]
+
+# Generar el gráfico de líneas con estilo modificado
+ggplot(data = ingreso_agregados, aes(x = edad, y = ingreso, color = factor(genero))) +
+  geom_line(size = 1) +
+  geom_vline(xintercept = c(60, 65), linetype = "dashed") +
+  labs(title = "Ingreso total semanal vs Edad por Sexo (0 hombre, 1 mujer) - Rubro: Comida Rápida Oficios y Otros Servicios",
+       x = "Edad", y = "Ingreso") +
+  theme_minimal() +
+  scale_color_manual(values = c("#F8766D", "#00BFC4")) +
+  scale_y_continuous(labels = scales::label_number(scale = 1e-0, suffix = "K")) +
+  theme(legend.title = element_blank())
+
+```
+```{r}
+library(ggplot2)
+
+# Creamos los datos agregados de ingreso separados por edad y genero
+ingreso_agregados <- aggregate(ingreso ~ edad + genero + rubro, data = ventas, FUN = mean)
+
+# Filtrar los casos donde el rubro sea "retail"
+ingreso_agregados <- ingreso_agregados[ingreso_agregados$rubro == "Retail", ]
+
+# Generar el gráfico de líneas con estilo modificado
+ggplot(data = ingreso_agregados, aes(x = edad, y = ingreso, color = factor(genero))) +
+  geom_line(size = 1) +
+  geom_vline(xintercept = c(60, 65), linetype = "dashed") +
+  labs(title = "Ingreso total semanal vs Edad por Sexo (0 hombre, 1 mujer) - Rubro: retail",
+       x = "Edad", y = "Ingreso") +
+  theme_minimal() +
+  scale_color_manual(values = c("#F8766D", "#00BFC4")) +
+  scale_y_continuous(labels = scales::label_number(scale = 1e-0, suffix = "K")) +
+  theme(legend.title = element_blank())
+
+```
+```{r}
+library(ggplot2)
+
+# Creamos los datos agregados de ingreso separados por edad y genero
+ingreso_agregados <- aggregate(ingreso ~ edad + genero + rubro, data = ventas, FUN = mean)
+
+# Filtrar los casos donde el rubro sea "Vestuario"
+ingreso_agregados <- ingreso_agregados[ingreso_agregados$rubro == "Vestuario", ]
+
+# Generar el gráfico de líneas con estilo modificado
+ggplot(data = ingreso_agregados, aes(x = edad, y = ingreso, color = factor(genero))) +
+  geom_line(size = 1) +
+  geom_vline(xintercept = c(60, 65), linetype = "dashed") +
+  labs(title = "Ingreso total semanal vs Edad por Sexo (0 hombre, 1 mujer) - Rubro: Vestuario",
+       x = "Edad", y = "Ingreso") +
+  theme_minimal() +
+  scale_color_manual(values = c("#F8766D", "#00BFC4")) +
+  scale_y_continuous(labels = scales::label_number(scale = 1e-0, suffix = "K")) +
+  theme(legend.title = element_blank())
+
+```
+
+
+
+#### Conclusiones
+- Hombres y mujeres trabaj misma cantidad de horas
+- La variable hrs_diarias estpa mala
+- El ingreso promedio es similar entre hombres y muejres
+- EL ingreso total es superior en hombres (10%)
+- Considerar edades superiores a 28 y menores a 60 (al ver edades)
+- Prudente eliminar outliers apra ver efecto sobre comercios chicos
+- 
+
+```{r}
+# Creamos los datos agregados de ingreso separados por edad
+ingreso_agregados <- aggregate(hrs_diarias ~ edad + genero, data = ventas, FUN = mean)
+
+# Generar el gráfico de líneas con estilo modificado
+ggplot(data = ingreso_agregados, aes(x = edad, y = hrs_diarias, color = factor(genero))) +
+  geom_line(size = 1) +  # Usamos geom_line en lugar de geom_bar
+  geom_vline(xintercept = c(60, 65), linetype = "dashed") +
+  labs(title = "Horas diarias trabajadas vs Edad por Sexo (0 hombre, 1 mujer)",
+       x = "Edad", y = "Horas") +
+  theme_minimal() +
+  scale_color_manual(values = c("#F8766D", "#00BFC4")) +  # Colores personalizados para 0 y 1
+ 
+  theme(legend.title = element_blank())  # Eliminamos título de la leyenda
+
+```
+
+
+
+```{r}
+# Creamos los datos agregados de ingreso separados por edad y cuarentena
+ingreso_agregados_cuarentena <- aggregate(ingreso ~ genero + cuarentena1, data = ventas, FUN = mean)
+
+factor_cuarentena <- factor(ingreso_agregados_cuarentena$cuarentena1)
+
+# Generar el gráfico de barras
+ggplot(data = ingreso_agregados_cuarentena, aes(x = genero, y = ingreso, fill = factor_cuarentena)) +
+  geom_bar(stat = "identity", position = "dodge") +  # Gráfico de barras con posición esquivada
+  
+  labs(title = "Ingreso vs Genero (1=mujer, 0=hombre) por cuarentena (1 si hubo, 0 no)",
+       x = "Genero", y = "Ingreso") +
+  theme_minimal() +
+   scale_y_continuous(labels = scales::label_number(scale = 1e-6, suffix = "M")) +
+  scale_fill_manual(values = c("0" = "red", "1" = "blue"))  # Color para genero (0 y 1)
+```
+```{r}
+# Cálculo de horas promedio trabajadas por hombres y mujeres
+horas_promedio <- aggregate(hrs_diarias ~ genero, data = ventas, FUN = mean)
+
+# Renombrar los valores de genero para que sean más descriptivos
+horas_promedio$genero <- ifelse(horas_promedio$genero == 0, "Hombre", "Mujer")
+
+
+# Imprimir los resultados
+print(horas_promedio)
+
+```
+
+```{r}
+
+
+# Obtener la tabla de frecuencias de horas diarias trabajadas
+tabla_frecuencias_horas <- table(ventas$hrs_trabajadas)
+
+# Imprimir la tabla de frecuencias
+#tabla_frecuencias_horas
+
+# Suponiendo que tienes la tabla de frecuencias tabla_frecuencias_horas
+
+# Convertir la tabla de frecuencias en un vector
+frecuencias <- as.vector(tabla_frecuencias_horas)
+
+# Obtener los valores únicos de la columna de horas diarias trabajadas (nombres de las barras)
+horas <- as.numeric(names(tabla_frecuencias_horas))
+
+# Crear el gráfico de barras
+barplot(frecuencias, names.arg = horas, xlab = "Horas Diarias Trabajadas", ylab = "Frecuencia",
+        main = "Gráfico de Frecuencia por Horas Semanales Trabajadas", col = "blue")
+
+```
+```
+
+
+
+```{r}
+# Obtener la tabla de frecuencias de horas diarias trabajadas
+tabla_frecuencias_horas <- table(ventas$hrs_diarias)
+
+# Imprimir la tabla de frecuencias
+#tabla_frecuencias_horas
+
+# Suponiendo que tienes la tabla de frecuencias tabla_frecuencias_horas
+
+# Convertir la tabla de frecuencias en un vector
+frecuencias <- as.vector(tabla_frecuencias_horas)
+
+# Obtener los valores únicos de la columna de horas diarias trabajadas (nombres de las barras)
+horas <- as.numeric(names(tabla_frecuencias_horas))
+
+# Crear el gráfico de barras
+barplot(frecuencias, names.arg = horas, xlab = "Horas Diarias Trabajadas", ylab = "Frecuencia",
+        main = "Gráfico de Frecuencia por Horas Diarias Trabajadas", col = "blue")
+
+```
