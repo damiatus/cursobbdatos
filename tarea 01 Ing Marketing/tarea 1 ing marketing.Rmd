@@ -58,7 +58,7 @@ Son 248000 obsrevaciones
 - 
 ```{r}
 
-ventas <- read.csv("mersample.csv", sep = ";")
+ventas <- read.csv("mersample.csv", sep = ";", encoding = "UTF-8")
 head(ventas)
 ```
 ```{r}
@@ -424,6 +424,7 @@ print(horas_promedio)
 - Compra promedio de dinero por transacciones dependiendo del género
 - Hacer modelos de regresion para ver que cosas ingluyen en ingresos
 - La brecha puede estar explicada por el rubro. regresionar COntrolanado por interacción entre rubro y género
+- Analizar tema productividad por hora, quizás las mujeres trabajan en horas menos productivas que los hombres (ej, tienen que llevar hijos al colegio y venden más tarde)
 
 ```{r}
 
