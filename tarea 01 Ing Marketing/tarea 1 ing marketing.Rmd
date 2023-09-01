@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #### Hacemos las importnaciones necesarias:
 
 ```{r , include=FALSE, echo=FALSE}
-#rm(list = ls())  # Esto eliminará todas las variables del entorno
+rm(list = ls())  # Esto eliminará todas las variables del entorno
 #install.packages("skimr")
 #install.packages("tinytex")
 #install.packages("DT")
@@ -46,7 +46,7 @@ library(tidyr)
 
 
 set.seed(123)
-setwd("C:/Users/crrfo/Desktop/tarea 01 Ing Marketing") #Seteamos el directorio de trabajo local
+setwd("//wsl$/Ubuntu-22.04/root/home/damiatus/cursobbdatos/tarea 01 Ing Marketing") #Seteamos el directorio de trabajo local
 ```
 
 #### Leemos la base de datos
@@ -71,6 +71,9 @@ ggplot(data = ventas, aes(x = ingreso)) +
   geom_histogram(binwidth = 25000, fill = "blue", color = "black") +
   labs(title = "Distribución de Ingresos", x = "Ingresos", y = "Frecuencia")
 ```
+
+#### Quitar solo el upper fence, no lower ya que lower está bien
+#### Sabemos el marhen?
 ```{r}
 # Calcular los límites de los bigotes (whiskers) para definir los outliers
 q1 <- quantile(ventas$ingreso, 0.25)
@@ -80,7 +83,7 @@ lower_fence <- q1 - 1.5 * iqr
 upper_fence <- q3 + 1.5 * iqr
 
 # Filtrar los datos para excluir los outliers
-ventas_filtradas <- ventas %>% filter(ingreso >= lower_fence, ingreso <= upper_fence)
+ventas_filtradas <- ventas %>% filter(ingreso >= 0, ingreso <= upper_fence)
 
 # Crear el gráfico de distribución sin outliers
 ggplot(data = ventas_filtradas, aes(x = ingreso)) +
@@ -112,7 +115,7 @@ lower_bound <- Q1 - 1.5 * IQR
 upper_bound <- Q3 + 1.5 * IQR
 
 # Filtrar los datos para quitar outliers
-rentas_filtradas <- ventas %>% filter(ingreso >= lower_bound & ingreso <= upper_bound)
+rentas_filtradas <- ventas %>% filter(ingreso >= 0 & ingreso <= upper_bound)
 
 # Obtener los principales datos estadísticos de la variable 'income' sin outliers
 summary_stats <- summary(rentas_filtradas$ingreso)
@@ -129,6 +132,31 @@ print(summary_stats)
 missing_ventas <- colSums(is.na(ventas))
 missing_ventas
 ```
+```{r}
+# Eliminar filas con valores faltantes en las columnas de interés
+ventas_sin_na <- ventas[complete.cases(ventas$ingreso), ]
+
+
+ventas_sin_na <- ventas[complete.cases(ventas$genero), ]
+
+#ventas_sin_na <- ventas[complete.cases(ventas$hrs_trabajdas), ]
+
+ventas_sin_na <- ventas[complete.cases(ventas$hrs_diarias), ]
+
+ventas_sin_na <- ventas[complete.cases(ventas$ingreso_hr), ]
+# Luego, crear el gráfico utilizando ventas_sin_na en lugar de ventas
+
+```
+
+```{r}
+# Imputar valores faltantes en la columna de ingreso con la mediana
+median_ingreso <- median(ventas$ingreso, na.rm = TRUE)
+ventas$ingreso[is.na(ventas$ingreso)] <- median_ingreso
+
+# Luego, crear el gráfico utilizando ventas
+
+```
+
 
 
 #### Frecuencia por edad, tomaría sobre 28 y bajo 60
@@ -187,13 +215,35 @@ ggplot(data = ingreso_agregados, aes(x = edad, y = ingreso, color = factor(gener
   theme(legend.title = element_blank())  # Eliminamos título de la leyenda
 
 ```
+
+```{r}
+# Umbral para definir outliers superiores
+umbral_outliers <- quantile(ventas$ingreso, 0.95)  # Puedes ajustar el percentil según tus necesidades
+
+# Filtrar los datos para quitar los outliers superiores
+ventas_filtradas <- ventas[ventas$ingreso <= umbral_outliers, ]
+
+# Crear el gráfico de densidad con datos filtrados
+ggplot(ventas_filtradas, aes(x = ingreso, fill = factor(genero))) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Distribución de Ingresos por Género sin Outliers Superiores",
+       x = "Ingreso",
+       y = "Densidad") +
+  scale_fill_manual(values = c("#F8766D", "#00BFC4"), labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+
+
+```
+
+
+
 ```{r echo=FALSE}
 # Creamos los datos agregados de ingreso separados por edad
 ingreso_agregados <- aggregate(ingreso_hr ~ edad + genero, data = ventas, FUN = mean)
 
 # Generar el gráfico de líneas con estilo modificado
 ggplot(data = ingreso_agregados, aes(x = edad, y = ingreso_hr, color = factor(genero))) +
-  geom_line(size = 1) +  # Usamos geom_line en lugar de geom_bar
+  geom_line(size = 1, na.rm=TRUE) +  # Usamos geom_line en lugar de geom_bar
   geom_vline(xintercept = c(60, 65), linetype = "dashed") +
   labs(title = "Ingreso/h vs Edad por Sexo (0 hombre, 1 mujer)",
        x = "Edad", y = "Ingreso") +
@@ -329,33 +379,6 @@ ggplot(data = ingreso_agregados, aes(x = edad, y = ingreso, color = factor(gener
 
 
 
-#### Conclusiones
-- Hombres y mujeres trabaj misma cantidad de horas
-- La variable hrs_diarias estpa mala
-- El ingreso promedio es similar entre hombres y muejres
-- EL ingreso total es superior en hombres (10%)
-- Considerar edades superiores a 28 y menores a 60 (al ver edades)
-- Prudente eliminar outliers apra ver efecto sobre comercios chicos
-- 
-
-```{r}
-# Creamos los datos agregados de ingreso separados por edad
-ingreso_agregados <- aggregate(hrs_diarias ~ edad + genero, data = ventas, FUN = mean)
-
-# Generar el gráfico de líneas con estilo modificado
-ggplot(data = ingreso_agregados, aes(x = edad, y = hrs_diarias, color = factor(genero))) +
-  geom_line(size = 1) +  # Usamos geom_line en lugar de geom_bar
-  geom_vline(xintercept = c(60, 65), linetype = "dashed") +
-  labs(title = "Horas diarias trabajadas vs Edad por Sexo (0 hombre, 1 mujer)",
-       x = "Edad", y = "Horas") +
-  theme_minimal() +
-  scale_color_manual(values = c("#F8766D", "#00BFC4")) +  # Colores personalizados para 0 y 1
- 
-  theme(legend.title = element_blank())  # Eliminamos título de la leyenda
-
-```
-
-
 
 ```{r}
 # Creamos los datos agregados de ingreso separados por edad y cuarentena
@@ -385,6 +408,22 @@ horas_promedio$genero <- ifelse(horas_promedio$genero == 0, "Hombre", "Mujer")
 print(horas_promedio)
 
 ```
+
+
+#### Conclusiones
+- Hombres y mujeres trabaj misma cantidad de horas
+- La variable hrs_diarias estpa mala
+- El ingreso promedio es similar entre hombres y muejres
+- EL ingreso total es superior en hombres (10%)
+- Considerar edades superiores a 28 y menores a 60 (al ver edades)
+- Prudente eliminar outliers apra ver efecto sobre comercios chicos
+- Quitar solo el upper fence, no lower ya que lower está bien
+- Sabemos el marhen?
+- Integrar barras (rangos) de dispersión al comparar igreso por edades (así vemos la dispersion en el promedio según cantidad de datos)
+- Gráfico de brecha ingresos trabajados X hora
+- Compra promedio de dinero por transacciones dependiendo del género
+- Hacer modelos de regresion para ver que cosas ingluyen en ingresos
+- La brecha puede estar explicada por el rubro. regresionar COntrolanado por interacción entre rubro y género
 
 ```{r}
 
