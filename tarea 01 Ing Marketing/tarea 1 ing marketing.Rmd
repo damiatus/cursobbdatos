@@ -120,7 +120,7 @@ ggplot(ingresos_promedio, aes(x = edad, y = ingreso_promedio, color = factor(gen
 ```
 ```{r echo=FALSE}
 ggplot(ingresos_promedio, aes(x = edad, y = ingreso_promedio, color = factor(genero))) +
-  ggtitle("Ingreso Promedio por Edad y Género") +
+  ggtitle("Ingreso Promedio por Edad y Género regresionado") +
   xlab("Edad") +
   ylab("Ingreso Promedio") +
   geom_point() +
@@ -157,7 +157,7 @@ Usando el df agregado por edad
 
 
 ggplot(ingresos_promedio, aes(x = edad, y = ingreso_promedio, color = factor(genero), fill = factor(genero))) +
-  ggtitle("Ingreso promedio agregado por edad") +
+  ggtitle("Ingreso promedio agregado por edad c/dispersion") +
   xlab("Edad") +
   ylab("Ingreso Promedio") +
   geom_smooth(method = "lm", se = TRUE) +
@@ -174,7 +174,7 @@ Usando el df completo Ventas
 
 
 ggplot(ventas, aes(x = edad, y = ingreso, color = factor(genero), fill = factor(genero))) +
-  ggtitle("Ingreso promedio por edad ") +
+  ggtitle("Ingreso promedio por edad c/dispersion") +
   xlab("Edad") +
   ylab("Ingreso Promedio") +
   geom_smooth(method = "lm", se = TRUE) +
@@ -208,7 +208,7 @@ cat("Los hombres ganan en promedio:" , diff_genero ,"%", "más que las mujeres",
 
 ### 3.
 
-#### Gráfico de ingresos X hora trabajada diaria X género (para ver quienes son más prudcitvos en las horas que deciden trabajar en el día)
+#### Horas diarias trabajadas X genero X edad  (para ver cuanto trabaja cada género)
 ```{r, echo=FALSE}
 # Agregamos por horas diarias trabajdas pore edad
 promedios_horas_dia <- aggregate(hrs_diarias ~ edad + genero, data = ventas, FUN = mean)
@@ -230,51 +230,7 @@ ggplot(promedios_horas_dia, aes(x = edad, y = promedio_horas_dia, color = factor
 
 ```
 
-
-
-#### Gráfico de ingresos X hora trabajada semanal X género (para ver quienes son más prudcitvos, buscar justifiacción de gráfico)
-```{r, echo=FALSE}
-# Agregamos por horas semanales trabajdas pore edad
-promedios_horas_semana <- aggregate(hrs_trabajadas ~ edad + genero, data = ventas, FUN = mean)
-
-# Renombrar la columna "hrs_diarias" a "promedio_horas"
-colnames(promedios_horas_semana) <- c("edad", "genero", "promedio_horas_semana")
-
-# Mostrar la tabla resultante
-print(promedios_horas_semana)
-
-ggplot(promedios_horas_semana, aes(x = edad, y = promedio_horas_semana, color = factor(genero))) +
-  ggtitle("Promedio de Horas Semanales Trabajadas por Edad y Género") +
-  xlab("Edad") +
-  ylab("Promedio Horas Diarias Trabajadas") +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  scale_color_manual(values = c("blue", "red"), labels = c("Hombre", "Mujer")) +
-  theme_minimal()
-```
-
-```{r echo=FALSE}
-promedio_semanal_hombres <- mean(ventas$hrs_trabajadas[ventas$genero == 0], na.rm = TRUE)
-
-# Mostrar el promedio de ingreso para Mujeres
-cat("Los hombres trabajan en promedio" , promedio_semanal_hombres,"horas a la semana", "\n")
-
-
-
-promedio_semanal_mujeres <- mean(ventas$hrs_trabajadas[ventas$genero == 1], na.rm = TRUE)
-
-# Mostrar el promedio de ingreso para Mujeres
-cat("Las mujeres trabajan en promedio" , promedio_semanal_mujeres,"horas a la semana", "\n")
-
-
-diff_horas_genero <- ((promedio_semanal_hombres-promedio_semanal_mujeres)*100)/promedio_semanal_mujeres
-
-cat("Los hombres trabajan en promedio" , diff_horas_genero ,"horas", "más que las mujeres a la semana", "\n")
-```
-
-
-
-#### Gráfico ventas_hora X genero
+#### Ingresos X hora trabajada diaria X género (para ver quienes son más prudcitvos, buscar justifiacción de gráfico)
 ```{r, echo=FALSE}
 # Agregamos por horas semanales trabajdas pore edad
 promedios_ventas_hora <- aggregate(ingreso_hr ~ edad + genero, data = ventas, FUN = mean)
@@ -296,23 +252,74 @@ ggplot(promedios_ventas_hora, aes(x = edad, y = promedio_ingreso_hr, color = fac
 ```
 
 
-### 4.y 5.
-
-#### Promedio horas trabajadas X genero
+#### Horas semanales trabajadas X genero X edad  (para ver cuanto trabaja cada género)
 ```{r, echo=FALSE}
+# Agregamos por horas semanales trabajdas pore edad
+promedios_horas_semana <- aggregate(hrs_trabajadas ~ edad + genero, data = ventas, FUN = mean)
 
+# Renombrar la columna "hrs_diarias" a "promedio_horas"
+colnames(promedios_horas_semana) <- c("edad", "genero", "promedio_horas_semana")
+
+# Mostrar la tabla resultante
+print(promedios_horas_semana)
+
+ggplot(promedios_horas_semana, aes(x = edad, y = promedio_horas_semana, color = factor(genero))) +
+  ggtitle("Promedio de Horas Semanales Trabajadas por Edad y Género") +
+  xlab("Edad") +
+  ylab("Promedio Horas Diarias Trabajadas") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = c("blue", "red"), labels = c("Hombre", "Mujer")) +
+  theme_minimal()
 ```
-#### Gráfico de horas diarias trabajadas X genero X edad  (para ver cuanto trabaja cada género)
+#### Ingresos X hora trabajada semanal X género (para ver quienes son más prudcitvos, buscar justifiacción de gráfico)
 ```{r, echo=FALSE}
+# Agregamos por horas semanales trabajdas pore edad
+promedios_ventas_semana <- aggregate(ingreso ~ edad + genero, data = ventas, FUN = mean)
 
+# Renombrar la columna "hrs_diarias" a "promedio_horas"
+colnames(promedios_ventas_semana) <- c("edad", "genero", "promedio_ingreso_semana")
+
+# Mostrar la tabla resultante
+print(promedios_ventas_semana)
+
+ggplot(promedios_ventas_semana, aes(x = edad, y = promedio_ingreso_semana, color = factor(genero))) +
+  ggtitle("Promedio ingresos por semana por Edad y Género") +
+  xlab("Edad") +
+  ylab("Ingreso por semana") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = c("blue", "red"), labels = c("Hombre", "Mujer")) +
+  theme_minimal()
 ```
+
+
+#### Promedio generales horas trabajdas semanales
+```{r echo=FALSE}
+promedio_semanal_hombres <- mean(ventas$hrs_trabajadas[ventas$genero == 0], na.rm = TRUE)
+
+# Mostrar el promedio de ingreso para Mujeres
+cat("Los hombres trabajan en promedio" , promedio_semanal_hombres,"horas a la semana", "\n")
+
+
+
+promedio_semanal_mujeres <- mean(ventas$hrs_trabajadas[ventas$genero == 1], na.rm = TRUE)
+
+# Mostrar el promedio de ingreso para Mujeres
+cat("Las mujeres trabajan en promedio" , promedio_semanal_mujeres,"horas a la semana", "\n")
+
+
+diff_horas_genero <- ((promedio_semanal_hombres-promedio_semanal_mujeres)*100)/promedio_semanal_mujeres
+
+cat("Los hombres trabajan en promedio" , diff_horas_genero ,"horas", "más que las mujeres a la semana", "\n")
+```
+
+
+
+#### Gráfico de ingreso X hora trabajda X genero (así se ve productividad)
+
+
 ### 6.
-
-#### Gráfico ingresos X edad con barras de dispersión
-```{r, echo=FALSE}
-
-```
-### 7.
 
 #### Ver montos de compra promedio X transacción X género
 ```{r, echo=FALSE}
