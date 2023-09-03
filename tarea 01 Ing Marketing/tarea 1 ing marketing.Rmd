@@ -46,25 +46,309 @@ library(tidyr)
 
 
 set.seed(123)
-setwd("//wsl$/Ubuntu-22.04/root/home/damiatus/cursobbdatos/tarea 01 Ing Marketing") #Seteamos el directorio de trabajo local
+#setwd("//wsl$/Ubuntu-22.04/root/home/damiatus/cursobbdatos/tarea 01 Ing Marketing") #Seteamos el directorio de trabajo local
 ```
 
 #### Leemos la base de datos
 
 Son 248000 obsrevaciones
 - Separar por rubro
-- Seaprar por panedmia si y pandemia no
-- Comprar por ingreso por hora ya que + horas, + ingreso
+- Seaparar por panedmia si y pandemia no
+- Comparar por ingreso por hora ya que + horas, + ingreso
 - 
 ```{r}
 
-ventas <- read.csv("mersample.csv", sep = ";", encoding = "UTF-8")
-head(ventas)
-```
-```{r}
-skim(ventas)
+mersample <- read.csv("mersample.csv", sep = ";", encoding = "UTF-8")
+head(mersample)
 ```
 
+Reemplazamos las comas por puntos 
+```{r}
+mersample$hrs_diarias <- as.numeric(gsub(",", ".", mersample$hrs_diarias))
+mersample$transacciones_hr <- as.numeric(gsub(",", ".", mersample$transacciones_hr))
+mersample$ingreso_hr <- as.numeric(gsub(",", ".", mersample$ingreso_hr))
+
+```
+
+## P1.
+### 1.
+#### Vemos datos generales de la data
+```{r, echo=FALSE}
+options(skimr_options = list(width = 10))
+skim(mersample)
+```
+
+
+#### Vemos distribución de ingresos
+```{r, echo=FALSE}
+# Crear un histograma de los ingresos
+hist(mersample$ingreso, main = "Distribución de Ingresos", xlab = "Ingresos", ylab = "Frecuencia")
+```
+
+
+#### Eliminamos ingresos sobre $1,000,000 ya que se busca analizar solo comercios pequeños dónde el dueño sea el único trabajdor (explicar criterio de eleccion de XX)
+```{r, echo=FALSE}
+# Eliminar filas con ingresos superiores a $1,000,000
+ventas <- mersample[mersample$ingreso <= 1000000, ]
+
+# Crear un histograma con el eje X en notación decimal
+ggplot(ventas, aes(x = ingreso)) +
+  geom_histogram(binwidth = 10000, fill = "blue", color = "black") +
+  labs(title = "Distribución de Ingresos (Menos de $1,000,000)",
+       x = "Ingresos", y = "Frecuencia") +
+  scale_x_continuous(labels = scales::comma) # Utiliza notación decimal
+```
+
+
+
+### 2.
+#### Gráfico de ingresos X género X edad (para ver ingreso total)
+
+```{r}
+# Calcular el promedio de ingresos por edad y género
+ingresos_promedio <- ventas %>%
+  group_by(edad, genero) %>%
+  summarize(ingreso_promedio = mean(ingreso))
+
+# Crear un gráfico de líneas
+ggplot(ingresos_promedio, aes(x = edad, y = ingreso_promedio, color = factor(genero))) +
+  geom_line(aes(group = genero)) +
+  labs(title = "Ingreso Promedio por Edad y Género",
+       x = "Edad", y = "Ingreso Promedio") +
+  scale_color_discrete(name = "Género", labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+```
+```{r echo=FALSE}
+ggplot(ingresos_promedio, aes(x = edad, y = ingreso_promedio, color = factor(genero))) +
+  ggtitle("Ingreso Promedio por Edad y Género") +
+  xlab("Edad") +
+  ylab("Ingreso Promedio") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = c("blue", "red"),name = "Género", labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+```
+
+```{r echo=FALSE}
+
+set.seed(54)
+x <- ingresos_promedio$edad
+y <- ingresos_promedio$ingreso_promedio
+genero <- ingresos_promedio$genero
+
+# Gráfico de dispersión con regresión suavizada y control por género
+plot(x[genero == 0], y[genero == 0], pch = 1, col = "blue", xlab = "Edad", ylab = "Ingreso Promedio")
+points(x[genero == 1], y[genero == 1], pch = 1, col = "red")
+lines(lowess(x[genero == 0], y[genero == 0]), col = "blue", lwd = 2)
+lines(lowess(x[genero == 1], y[genero == 1]), col = "red", lwd = 2)
+
+# Leyenda
+legend(x = "topright", legend = c("Hombre", "Mujer"), col = c("blue", "red"), pch = 16, title = "Género")
+
+# Título del gráfico
+title(main = "Ingreso agregado por edad con Regresión Suavizada")
+
+```
+
+Usando el df agregado por edad
+
+```{r}
+# Gráfico con ggplot2 que muestra líneas de intervalos de confianza con colores diferentes por género
+
+
+ggplot(ingresos_promedio, aes(x = edad, y = ingreso_promedio, color = factor(genero), fill = factor(genero))) +
+  ggtitle("Ingreso promedio agregado por edad") +
+  xlab("Edad") +
+  ylab("Ingreso Promedio") +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_color_manual(values = c("blue","red"), labels = c("Hombre", "Mujer")) +  # Etiquetas de los colores
+  scale_fill_manual(values = c("blue","red"), labels = c("Hombre", "Mujer")) +    # Etiquetas de los colores
+  labs(color = "Género", fill = "Género") +  # Cambio de nombres de las leyendas de colores
+  theme_minimal()
+
+```
+
+Usando el df completo Ventas
+```{r}
+# Gráfico con ggplot2 que muestra líneas de intervalos de confianza con colores diferentes por género
+
+
+ggplot(ventas, aes(x = edad, y = ingreso, color = factor(genero), fill = factor(genero))) +
+  ggtitle("Ingreso promedio por edad ") +
+  xlab("Edad") +
+  ylab("Ingreso Promedio") +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_color_manual(values = c("blue","red"), labels = c("Hombre", "Mujer")) +  # Etiquetas de los colores
+  scale_fill_manual(values = c("blue","red"), labels = c("Hombre", "Mujer")) +    # Etiquetas de los colores
+  labs(color = "Género", fill = "Género") +  # Cambio de nombres de las leyendas de colores
+  theme_minimal()
+
+```
+
+```{r echo=FALSE}
+promedio_hombres <- mean(ventas$ingreso[ventas$genero == 0], na.rm = TRUE)
+
+# Mostrar el promedio de ingreso para Mujeres
+cat("El ingreso promedio entre hombres es:" , promedio_hombres, "\n")
+
+
+
+promedio_mujeres <- mean(ventas$ingreso[ventas$genero == 1], na.rm = TRUE)
+
+# Mostrar el promedio de ingreso para Mujeres
+cat("El ingreso promedio entre muejres es:" , promedio_mujeres, "\n")
+
+promedio_hombres <- mean(ventas$ingreso[ventas$genero == 0], na.rm = TRUE)
+diff_genero <- ((promedio_hombres-promedio_mujeres)*100)/promedio_mujeres
+
+cat("Los hombres ganan en promedio:" , diff_genero ,"%", "más que las mujeres", "\n")
+
+```
+
+
+### 3.
+
+#### Gráfico de ingresos X hora trabajada diaria X género (para ver quienes son más prudcitvos en las horas que deciden trabajar en el día)
+```{r, echo=FALSE}
+# Agregamos por horas diarias trabajdas pore edad
+promedios_horas_dia <- aggregate(hrs_diarias ~ edad + genero, data = ventas, FUN = mean)
+
+# Renombrar la columna "hrs_diarias" a "promedio_horas"
+colnames(promedios_horas_dia) <- c("edad", "genero", "promedio_horas_dia")
+
+# Mostrar la tabla resultante
+print(promedios_horas_dia)
+
+ggplot(promedios_horas_dia, aes(x = edad, y = promedio_horas_dia, color = factor(genero))) +
+  ggtitle("Promedio de Horas Diarias Trabajadas por Edad y Género") +
+  xlab("Edad") +
+  ylab("Promedio Horas Diarias Trabajadas") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = c("blue", "red"), labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+
+```
+
+
+
+#### Gráfico de ingresos X hora trabajada semanal X género (para ver quienes son más prudcitvos, buscar justifiacción de gráfico)
+```{r, echo=FALSE}
+# Agregamos por horas semanales trabajdas pore edad
+promedios_horas_semana <- aggregate(hrs_trabajadas ~ edad + genero, data = ventas, FUN = mean)
+
+# Renombrar la columna "hrs_diarias" a "promedio_horas"
+colnames(promedios_horas_semana) <- c("edad", "genero", "promedio_horas_semana")
+
+# Mostrar la tabla resultante
+print(promedios_horas_semana)
+
+ggplot(promedios_horas_semana, aes(x = edad, y = promedio_horas_semana, color = factor(genero))) +
+  ggtitle("Promedio de Horas Semanales Trabajadas por Edad y Género") +
+  xlab("Edad") +
+  ylab("Promedio Horas Diarias Trabajadas") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = c("blue", "red"), labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+```
+
+```{r echo=FALSE}
+promedio_semanal_hombres <- mean(ventas$hrs_trabajadas[ventas$genero == 0], na.rm = TRUE)
+
+# Mostrar el promedio de ingreso para Mujeres
+cat("Los hombres trabajan en promedio" , promedio_semanal_hombres,"horas a la semana", "\n")
+
+
+
+promedio_semanal_mujeres <- mean(ventas$hrs_trabajadas[ventas$genero == 1], na.rm = TRUE)
+
+# Mostrar el promedio de ingreso para Mujeres
+cat("Las mujeres trabajan en promedio" , promedio_semanal_mujeres,"horas a la semana", "\n")
+
+
+diff_horas_genero <- ((promedio_semanal_hombres-promedio_semanal_mujeres)*100)/promedio_semanal_mujeres
+
+cat("Los hombres trabajan en promedio" , diff_horas_genero ,"horas", "más que las mujeres a la semana", "\n")
+```
+
+
+
+#### Gráfico ventas_hora X genero
+```{r, echo=FALSE}
+# Agregamos por horas semanales trabajdas pore edad
+promedios_ventas_hora <- aggregate(ingreso_hr ~ edad + genero, data = ventas, FUN = mean)
+
+# Renombrar la columna "hrs_diarias" a "promedio_horas"
+colnames(promedios_ventas_hora) <- c("edad", "genero", "promedio_ingreso_hr")
+
+# Mostrar la tabla resultante
+print(promedios_ventas_hora)
+
+ggplot(promedios_ventas_hora, aes(x = edad, y = promedio_ingreso_hr, color = factor(genero))) +
+  ggtitle("Promedio ingresos por hora por Edad y Género") +
+  xlab("Edad") +
+  ylab("Ingreso por hora") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = c("blue", "red"), labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+```
+
+
+### 4.y 5.
+
+#### Promedio horas trabajadas X genero
+```{r, echo=FALSE}
+
+```
+#### Gráfico de horas diarias trabajadas X genero X edad  (para ver cuanto trabaja cada género)
+```{r, echo=FALSE}
+
+```
+### 6.
+
+#### Gráfico ingresos X edad con barras de dispersión
+```{r, echo=FALSE}
+
+```
+### 7.
+
+#### Ver montos de compra promedio X transacción X género
+```{r, echo=FALSE}
+
+```
+#### Ver montos de compra promedio X transacción X género X rubro
+```{r, echo=FALSE}
+
+```
+### 8.
+#### Grafico ingreso X rubro
+```{r, echo=FALSE}
+
+```
+#### Grafico inigreso X genero X rubro
+```{r, echo=FALSE}
+
+```
+
+
+## P2.
+
+### 9.
+
+#### Regresionar sobre ingresos controlando por género
+```{r, echo=FALSE}
+
+```
+
+#### Regresionar sobre ingresos controlando por género X rubro
+```{r, echo=FALSE}
+
+```
+
+
+###-----------------------------------------------------------------
 ```{r}
 # Crear el gráfico de distribución
 ggplot(data = ventas, aes(x = ingreso)) +
@@ -418,7 +702,7 @@ print(horas_promedio)
 - Considerar edades superiores a 28 y menores a 60 (al ver edades)
 - Prudente eliminar outliers apra ver efecto sobre comercios chicos
 - Quitar solo el upper fence, no lower ya que lower está bien
-- Sabemos el marhen?
+- Sabemos el margen?
 - Integrar barras (rangos) de dispersión al comparar igreso por edades (así vemos la dispersion en el promedio según cantidad de datos)
 - Gráfico de brecha ingresos trabajados X hora
 - Compra promedio de dinero por transacciones dependiendo del género
