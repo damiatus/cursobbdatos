@@ -1,0 +1,706 @@
+---
+title: "Tarea 1 - IN5162-1, Semestre Primavera 2023"
+author: "Joaquin Urbina, Damián De Aguiar."
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+    theme: simplex
+    highlight: tango
+    toc: no
+  pdf_document:
+    toc: no
+encoding: UTF-8
+---
+
+<!-- 
+Author  	  : Joaquin Urbina y Damian De Aguiar 
+Description	: Brecha de Genero en Ingresos de Ventas
+Notes       : 
+-->
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+<p align="right"><b>Curso:</b> Ingeniería de Marketing, Marcel Goic</p>
+<p align="right"><b>Equipo Docente:</b> Joaquín Cisternas, Ignacio Hernández, Andrés Olivares, Agustín Hilcker</p>
+
+# {.tabset}
+
+## Enunciado
+
+Las inequidades de género se manifiestan en disitintas áreas de la economía y existe evidencia que apunta a que [el ingreso de los hombres es mayor que el de las mujeres en casi todo el mundo](https://ourworldindata.org/economic-inequality-by-gender/#in-most-countries-there-is-a-substantial-gender-pay-gap). En objetivo de esta tarea es entender si esta brecha se presenta en pequeños comercios, dónde la literatura sugiere [la participación de mujeres ha crecido significativamente en las últimas décadas](https://www.tandfonline.com/doi/full/10.1111/j.1540-627X.2007.00214.x)  
+
+
+Para estudiar las brechas de género, usaremos los datos de una plataforma de pagos digitales con amplia cobertura en pequeños comercios. La plataforma registra todos los pagos digitales de una muestra de 5 mil comercios en una región en Latinoamericano que no podemos revelar. Los pagos digitales se realizan en un dispositivo de cobro que procesa la información de las tarjetas de crédito y/o débito de los clientes de los comercios y administra el pago digitalmente. Para usar el servicio, los comercios deben comprar el dispositivo que procesa los pagos el que queda registrado a cargo de un o una responsable comercial sobre quién se conoce el domicilio y el género. Como la muestra corresponde a comercios que en general tienen baja facturación, es razonable asumir que quién registra el dispositivo es quién en general opera el negocio, lo que nos posibilita estudiar brechas de ingreso. 
+
+La base de datos que hemos recopilado para estudiar las brechas de género contiene una caracterización del comercio, y variables de actividad econoómica semanal como ingresos, numero de transacciones y horas trabajadas: 
+
+* **idm**: Número del vendedor(a)
+* **zona**: String con id de la zona. 
+* **semana**: Corresponde a la semana del año del registro.
+* **Año**: Corresponde al año del registro.
+* **semana_Año**: String que une las columnas semana y año (formato: semana-Año)
+* **edad**: Edad del vendedor(a).
+* **genero**: Toma el valor 1 si es mujer y 0 si es hombre.
+* **ingreso**: Ingresos percibidos por el vendedor(a) i en la semana w del año y.
+* **dias_trabajados**: Días trabajados por el vendedor(a) i en la semana w del año y.
+* **antiguedad**: Antigüedad (en años) del vendedor i utilizando SumUp.
+* **rubro**: Rubro del negocio del vendedor i.
+* **transacciones**: Cantidad de transacciones que hizo el vendedor(a) i en la semana w del año y.
+* **hrs_trabajados**: Horas trabajadas por el vendedor(a) i en la semana w del año y.
+* **cuarentena1**: 1 si hubo cuarentena algún dia activo del vendedor(a) i en la semana w del año y, 0 si no.
+* **hrs_diarias**: Horas diarias promedio trabajadas en los días que el vendedor(a) i trabajó en la semana w del año y.
+* **transacciones_hr**: Promedio de transacciones por hora realizadas por el vendedor(a) i en la semana w del año y.
+* **ingreso_hr**: Ingresos por hora promedio percibidos por el vendedor(a) i en la semana w del año y.
+
+A partir surgen una serie de preguntas de investigación interesantes. ¿Existe una brecha de ingresos para este segmento de comerciantes? De existir, ¿cuál es su magnitud y qué tanta dispersión existe? ¿Es homogénea entre rubros y zonas? ¿Qué podría explicar esta potente diferencia en los ingresos? 
+
+#### **Reglas del juego** 
+
+* Las tareas buscan replicar parcialmente las labores a las que se enfrentarían en el análisis de datos para el apoyo en la toma de decisiones, ya sea para una organización o para la definición de políticas. Por esto, se han propuesto preguntas relativamente abiertas que requieren que ustedes discutan y decidan cuál es el mejor enfoque de solución. Les pedimos que se involucren tempranamente en el desarrollo de la tarea para tener una discusión enriquecedora.
+
+* Todas las dudas, comentarios y errores publicarlos **exclusivamente** en el foro de u-cursos. De esta forma todos se benefician de las respuestas ofrecidas.
+
+* Consideramos que es muy importante que logren escribir un informe conciso con una redacción acorde de un informe técnico profesional. La presentación y comunicación de resultados es parte integral de la tarea y, por tanto, será evaluada cuidadosamente.
+
+* La tarea se desarrolla en grupos de máximo 3 integrantes. El entregable principal es un único markdown separado en tabs (a través de la opción .tabset). En un primer tab incluya todo el desarrollo de la tarea adecuadamente comentado. El segundo tab incluya el resumen de sus resultados de acuerdo a lo pedido en la pregunta 6. Este segundo tab es el que usarán en caso de que les corresponda presentar sus resultados. Considere también un tab con todos los procedimientos preliminares y otro para los anexos dónde puede incluir cualquier resultado complementario. 
+
+* Para entregar sus resultados suba, vía u-cursos, un único archivo comprimido llamado t1-A1-A2-A3.zip, donde A1, A2 y A3 es el primer apellido de los integrantes del grupo. Incluya también los nombres de los integrantes en el documento mismo. Incluya en el zip tanto el archivo .html de salida del markdown como los códigos fuentes que permitan reproducir sus resultados.
+
+* Para la pregunta final consideramos que 4 figuras son suficientes para resumir los aprendizajes más relevantes, pero si están convencidos de que agregar una figura adicional es absolutamente necesaria, ¡Adelante!
+
+* La fecha de entrega de la tarea es el jueves 7 de septiembre a las 23:59, sin excepciones y no habrá plazo extra para la entrega. Si por algún motivo de fuerza mayor se ve imposibilitado de entregar la tarea en el plazo estipulado, deberá escribir directamente al profesor explicando su situación. El profesor decidirá el curso de acción de acuerdo a los méritos del caso. Como siempre, es mejor dar cuenta de cualquier problema con la mayor anticipación posible. 
+
+* Recuerde que tenemos dos instancias de retroalimentación asociadas a la tarea:
+
+  1. La sesión, a realizarse el día <span style="color: navy">viernes 1 de septiembre</span>, está destinada para que expongan sus avances y dificultades y podamos discutir colectivamente cuáles son causes de acción razonables para resolver los problemas. A esta fecha se espera que los grupos al menos hayan explorado los datos y estimado algunos modelos preliminares. 
+  2. La sesión, a realizarse el día <span style="color: navy">viernes 8 de septiembre</span>, está destinada a que expongan los resultados más relevantes de su trabajo y resuman sus principales aprendizajes. Esta instancia busca simular una presentación final contra una contraparte interesada, como a las que se enfrentarán frecuentemente en su vida profesional. 
+  
+Aunque me gustaría que todos pudieran presentar, no tenemos tiempo para aquello por lo solo  seleccionaremos a aquellos que encuentren valor en esta instacia de aprendizaje. Las presentaciones tendrán una duración aproximada de 10 minutos y no es necesario que preparen material adicional. La salida del markdown debe ser lo suficientemente explicativa para comunicar sus resultados. 
+
+- A raíz de la opinión de los estudiantes, vamos a implementar una co-evaluación para que los estudiantes puedan valorar la participación de los compañeros y compañeras de grupo. Para calcular la nota final del alumno $j$ ponderaremos la nota grupal por $\max \left\{ \frac{J \cdot prom_j}{\sum_{k=1}^J prom_k} , 0.75 \right\}$, donde $prom_k$ corresponde al promedio de las co-evaluaciones recibidas por el estudiante $k$ dentro del grupo de $J$ integrantes.  
+
+- El equipo docente considera que la copia de tareas atenta en contra de tu aprendizaje y por tanto aplicará todas las medidas que estén a su disposición para desincentivar esta mala práctica.
+
+## Preliminares
+
+Escriba acá todos los comandos que necesita ejecutar antes de abordar las preguntas de la tarea (carga de librerías, lectura de datos, limpieza de la data, transformación de variables y todo lo que necesite).
+
+#### Preparación Tarea
+```{r, echo=FALSE}
+devtools::install_github("kupietz/kableExtra")
+```
+
+```{r, echo=FALSE}
+#install.packages("readr")
+#install.packages("glmnet")
+#install.packages("ggplot2")
+#install.packages("ggcorrplot")
+#install.packages("fixest")
+#install.packages("tidyverse")
+#install.packages("kableExtra")
+#install.packages("caret")
+#install.packages("modelsummary")
+#install.packages("earth")
+#install.packages("randomForest")
+#install.packages("stargazer")
+#install.packages("vtable")
+#install.packages(dplyr)
+#install.packages("reactable")
+library(readr)      #Para leer el .csv
+library(glmnet)     #Ajusta modelo lineal
+library(ggplot2)    #Para realización de gráficos
+library(ggcorrplot) #Para realizar correlogramas
+library(fixest)     #Para correr modelos con efectos fijos
+library(kableExtra) #Para formatear tablas
+library(tidyverse)  #Funcionalidades para manipular y desplegar datos
+library(caret)
+library(modelsummary)
+library(earth)
+library(randomForest)
+library(stargazer)
+library(knitr)
+library(vtable)  
+library(dplyr)
+library(reactable)
+library(skimr)
+#setwd("//wsl$/Ubuntu-22.04/root/home/damiatus/cursobbdatos/tarea 01 Ing Marketing")
+```
+```{r, echo=FALSE}
+
+ruta_archivo <- "C:\\Users\\crrfo\\Desktop\\bases\\mersample.csv"
+mersample <- read_delim(ruta_archivo, delim = ";", escape_double = FALSE, trim_ws = TRUE)
+head(mersample)
+```
+## Desarrollo
+
+Documente acá el desarrollo de su tarea por pregunta.
+
+### Pregunta 1
+
+(1.0 puntos) Explore los datos para entender como se comportan los ingresos de acuerdo al género del comerciante y liste al menos 3 variables que podrían influir en la brecha de ingresos. Justifique la elección de estas variables en base a los resultados del ejericio de exploración de datos.
+
+
+
+### 1.
+#### Vemos datos generales de la data
+```{r, echo=FALSE}
+summary(mersample)
+```
+#### Frecuencia de datos por edad
+```{r}
+ggplot(mersample, aes(x = edad)) +
+  geom_bar() +
+  labs(title = "Número de Muestras por Rango Etario", x = "Rango Etario", y = "Número de Muestras") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+##### R- Notamos como los datos se centran entre los 30 a 60 años, fuera de ese rango pueden haber problemas en las observaciones debido a la baja cantidad de datos.
+
+
+#### Vemos distribución de ingresos
+```{r, echo=FALSE}
+# Crear un histograma de los ingresos
+hist(mersample$ingreso, main = "Distribución de Ingresos", xlab = "Ingresos", ylab = "Frecuencia")
+```
+
+##### R- Notamos como la dispersion de los datos es muy grande, lleganiod a ingresos de 19 millones.
+Eliminamos ingresos sobre $1,000,000 ya que se busca analizar solo comercios pequeños dónde el dueño sea el único trabajdor (explicar criterio de eleccion de XX)
+```{r, echo=FALSE}
+# Eliminar filas con ingresos superiores a $1,000,000
+ventas <- mersample[mersample$ingreso <= 1000000, ]
+
+# Crear un histograma con el eje X en notación decimal
+ggplot(ventas, aes(x = ingreso)) +
+  geom_histogram(binwidth = 10000, fill = "blue", color = "black") +
+  labs(title = "Distribución de Ingresos (Menos de $1,000,000)",
+       x = "Ingresos", y = "Frecuencia") +
+  scale_x_continuous(labels = scales::comma) # Utiliza notación decimal
+```
+
+#### Gráfico de ingresos X género X edad (para ver ingreso total)
+
+```{r}
+# Calcular el promedio de ingresos por edad y género
+ingresos_promedio <- ventas %>%
+  group_by(edad, genero) %>%
+  summarize(ingreso_promedio = mean(ingreso))
+
+# Crear un gráfico de líneas
+ggplot(ingresos_promedio, aes(x = edad, y = ingreso_promedio, color = factor(genero))) +
+  geom_line(aes(group = genero)) +
+  labs(title = "Ingreso Promedio por Edad y Género",
+       x = "Edad", y = "Ingreso Promedio") +
+  scale_color_discrete(name = "Género", labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+```
+##### R- Notamos como existe una tendencia de los hombres a tener mayores ingresos que las mujeres.
+
+
+```{r echo=FALSE}
+ggplot(ingresos_promedio, aes(x = edad, y = ingreso_promedio, color = factor(genero))) +
+  ggtitle("Ingreso Promedio por Edad y Género regresionado") +
+  xlab("Edad") +
+  ylab("Ingreso Promedio") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = c("blue", "red"),name = "Género", labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+```
+##### R- Los puntos indican el promedio de ingreso para una edad determinada. Se aprecia con las líneas de regresión cómo la brecha de ingreso tiende a hacerse mayor a medida que las personas tienen más edad.
+
+
+```{r echo=FALSE}
+
+set.seed(54)
+x <- ingresos_promedio$edad
+y <- ingresos_promedio$ingreso_promedio
+genero <- ingresos_promedio$genero
+
+# Gráfico de dispersión con regresión suavizada y control por género
+plot(x[genero == 0], y[genero == 0], pch = 1, col = "blue", xlab = "Edad", ylab = "Ingreso Promedio")
+points(x[genero == 1], y[genero == 1], pch = 1, col = "red")
+lines(lowess(x[genero == 0], y[genero == 0]), col = "blue", lwd = 2)
+lines(lowess(x[genero == 1], y[genero == 1]), col = "red", lwd = 2)
+
+# Leyenda
+legend(x = "topright", legend = c("Hombre", "Mujer"), col = c("blue", "red"), pch = 16, title = "Género")
+
+# Título del gráfico
+title(main = "Ingreso agregado por edad con Regresión Suavizada")
+
+```
+
+##### R-  Al replicar el gráfico anterior pero con una regresion suavizada dado la gran dispersion existente especialmente en edades de los extremos para los que hay pocos datos en la muestra. Se observa cómo la brecha de ingreso se produce por un aumento del ingreso del hombre más que una variación en el de la mujer. A su vez se observa cómo la brecha disminuye pasado los 55 añosm esto se puede deber al efecto de la jubilación o retiro.
+
+
+Usando el df agregado por edad:
+
+```{r}
+# Gráfico con ggplot2 que muestra líneas de intervalos de confianza con colores diferentes por género
+
+
+ggplot(ingresos_promedio, aes(x = edad, y = ingreso_promedio, color = factor(genero), fill = factor(genero))) +
+  ggtitle("Ingreso promedio agregado por edad c/dispersion") +
+  xlab("Edad") +
+  ylab("Ingreso Promedio") +
+  geom_smooth(method = "lm", se = TRUE) +
+  scale_color_manual(values = c("blue","red"), labels = c("Hombre", "Mujer")) +  # Etiquetas de los colores
+  scale_fill_manual(values = c("blue","red"), labels = c("Hombre", "Mujer")) +    # Etiquetas de los colores
+  labs(color = "Género", fill = "Género") +  # Cambio de nombres de las leyendas de colores
+  theme_minimal()
+
+```
+##### R- Con este gráfico se observa la gran dispersion que existe especialmente entre ingresos entre las edades extremas, esto se debe al bajo número de datos para estas edades.
+
+
+#### Sacamos promedios de ingreso en todos los datos
+```{r echo=FALSE}
+promedio_hombres <- mean(ventas$ingreso[ventas$genero == 0], na.rm = TRUE)
+
+# Mostrar el promedio de ingreso para Mujeres
+cat("El ingreso promedio entre hombres es:" , promedio_hombres, "\n")
+
+
+
+promedio_mujeres <- mean(ventas$ingreso[ventas$genero == 1], na.rm = TRUE)
+
+# Mostrar el promedio de ingreso para Mujeres
+cat("El ingreso promedio entre muejres es:" , promedio_mujeres, "\n")
+
+promedio_hombres <- mean(ventas$ingreso[ventas$genero == 0], na.rm = TRUE)
+diff_genero <- ((promedio_hombres-promedio_mujeres)*100)/promedio_mujeres
+
+cat("Los hombres ganan en promedio:" , diff_genero ,"%", "más que las mujeres", "\n")
+
+```
+
+
+#### Horas diarias trabajadas X genero X edad  (para ver cuanto trabaja cada género)
+```{r, echo=FALSE}
+# Agregamos por horas diarias trabajdas pore edad
+promedios_horas_dia <- aggregate(hrs_diarias ~ edad + genero, data = ventas, FUN = mean)
+
+# Renombrar la columna "hrs_diarias" a "promedio_horas"
+colnames(promedios_horas_dia) <- c("edad", "genero", "promedio_horas_dia")
+
+# Mostrar la tabla resultante
+#print(promedios_horas_dia)
+
+ggplot(promedios_horas_dia, aes(x = edad, y = promedio_horas_dia, color = factor(genero))) +
+  ggtitle("Promedio de Horas Diarias Trabajadas por Edad y Género") +
+  xlab("Edad") +
+  ylab("Promedio Horas Diarias Trabajadas") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = c("blue", "red"), labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+
+```
+##### R- Acá vemos cómo las mujeers tienden a trabajar más horas diarias a medida que crecen y los hombres se mantienen relativamente igual en el tiempo. Es especialmente curioso al compararlo con el grafico anterior ya que las muejres tienden a ganar menos en el tiempo.
+
+
+#### Ingresos X hora trabajada diaria X género (para ver quienes son más prudcitvos, buscar justifiacción de gráfico)
+```{r, echo=FALSE}
+# Agregamos por horas semanales trabajdas pore edad
+promedios_ventas_hora <- aggregate(ingreso_hr ~ edad + genero, data = ventas, FUN = mean)
+
+# Renombrar la columna "hrs_diarias" a "promedio_horas"
+colnames(promedios_ventas_hora) <- c("edad", "genero", "promedio_ingreso_hr")
+
+# Mostrar la tabla resultante
+#print(promedios_ventas_hora)
+
+ggplot(promedios_ventas_hora, aes(x = edad, y = promedio_ingreso_hr, color = factor(genero))) +
+  ggtitle("Promedio ingresos por hora por Edad y Género") +
+  xlab("Edad") +
+  ylab("Ingreso por hora") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = c("blue", "red"), labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+```
+##### R- Vemos que el ingreso que logran por hora es cada vez mayor en mujeres a lo largo del tiempo, osea que aumentan su productividad cosa que en hombres crece menos. Especialmente curioso al ver que el ingreso total semanal de las mujeres disminuye en el tiempo.
+
+#### Horas semanales trabajadas X genero X edad  (para ver cuanto trabaja cada género)
+```{r, echo=FALSE}
+# Agregamos por horas semanales trabajdas pore edad
+promedios_horas_semana <- aggregate(hrs_trabajadas ~ edad + genero, data = ventas, FUN = mean)
+
+# Renombrar la columna "hrs_diarias" a "promedio_horas"
+colnames(promedios_horas_semana) <- c("edad", "genero", "promedio_horas_semana")
+
+# Mostrar la tabla resultante
+#print(promedios_horas_semana)
+
+ggplot(promedios_horas_semana, aes(x = edad, y = promedio_horas_semana, color = factor(genero))) +
+  ggtitle("Promedio de Horas Semanales Trabajadas por Edad y Género") +
+  xlab("Edad") +
+  ylab("Promedio Horas Diarias Trabajadas") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = c("blue", "red"), labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+```
+##### R- Notamos al agregar por edad, las mujeres tienden a trabajar más a medida que crecen, mientras los hombres trabajan siempre lo mismo.
+
+#### Ingresos X hora trabajada semanal X género (para ver quienes son más prudcitvos, buscar justifiacción de gráfico)
+```{r, echo=FALSE}
+# Agregamos por horas semanales trabajdas pore edad
+promedios_ventas_semana <- aggregate(ingreso ~ edad + genero, data = ventas, FUN = mean)
+
+# Renombrar la columna "hrs_diarias" a "promedio_horas"
+colnames(promedios_ventas_semana) <- c("edad", "genero", "promedio_ingreso_semana")
+
+# Mostrar la tabla resultante
+#print(promedios_ventas_semana)
+
+ggplot(promedios_ventas_semana, aes(x = edad, y = promedio_ingreso_semana, color = factor(genero))) +
+  ggtitle("Promedio ingresos por semana por Edad y Género") +
+  xlab("Edad") +
+  ylab("Ingreso por semana") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = c("blue", "red"), labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+```
+##### R- Sin embargo, a pesar de trabajar más a la semana, las muejres ganan menos que los hombres. Esto brecha se acrecenta en el tiempo lo que significa que a medida que las mujeres aumentan su cantidad de horas trabajadas, su ingreso disminuye.
+
+
+#### Ahora obtenemos los promedios generales de las horas trabajdas, sin agregar por edad.
+```{r echo=FALSE}
+promedio_semanal_hombres <- mean(ventas$hrs_trabajadas[ventas$genero == 0], na.rm = TRUE)
+
+# Mostrar el promedio de ingreso para Mujeres
+cat("Los hombres trabajan en promedio" , promedio_semanal_hombres,"horas a la semana", "\n")
+
+
+
+promedio_semanal_mujeres <- mean(ventas$hrs_trabajadas[ventas$genero == 1], na.rm = TRUE)
+
+# Mostrar el promedio de ingreso para Mujeres
+cat("Las mujeres trabajan en promedio" , promedio_semanal_mujeres,"horas a la semana", "\n")
+
+
+diff_horas_genero <- ((promedio_semanal_hombres-promedio_semanal_mujeres)*100)/promedio_semanal_mujeres
+
+cat("Los hombres trabajan en promedio" , diff_horas_genero ,"horas", "más que las mujeres a la semana", "\n")
+```
+
+
+
+
+#### Gráfico de ingreso X hora trabajda X genero (así se ve productividad)
+```{r, echo=FALSE}
+promedios_ingreso_hora <- aggregate(ingreso ~ hrs_trabajadas + genero, data = ventas, FUN = mean)
+
+ggplot(promedios_ingreso_hora,aes(x = hrs_trabajadas, y = ingreso, color = factor(genero))) +
+  geom_point() +
+  labs(x = "Horas Trabajadas", y = "Ingreso", color = "Genero") +
+   ggtitle("Ingreso por horas trabajadas a la semana") +
+   geom_smooth(method = "lm", se = FALSE) +
+   scale_color_manual(values = c("blue", "red"), labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+```
+##### R- Vemos como existe una brecha en la productividad, siendo los hombres más producitvos por hora trabjada bajo al trabjar bajo 50 horas semanales. Sobre las 50 horas al tener pocos datos no es recomendable sacar una conclusión de como es la  brescha a pesar de que el gráifco la muestre.
+
+#### Ver montos de compra promedio X transacción X género
+```{r, echo=FALSE}
+#STAND BY
+```
+#### Ver montos de compra promedio X transacción X género X rubro
+```{r, echo=FALSE}
+#STAND BY
+```
+
+#### Grafico promedio ingreso X rubro
+```{r, echo=FALSE}
+promedios_ingreso_rubro <- aggregate(ingreso ~ rubro + antiguedad + genero, data = ventas, FUN = mean)
+
+ggplot(promedios_ingreso_rubro, aes(x = antiguedad, y = ingreso, fill = (rubro))) +
+  ggtitle("Ingreso por antiguedad en rubro") +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  facet_grid(rubro~genero)
+```
+##### R- Vemos como las mujeres (columna derecha) tienden a ganar más en los rubros de "alimentas y abarrotes" y "vestuario" en el tiempo que los hombres, quienes a partir del tercer año disminuyen sus ingresos. Esto quizás se puede deber a una tendedncia de especialización.Igualmente en estos dos rubros se observa una caída en los ingresos a partir del quinto año tanto en hombres como en mujeres. Las muejres disminuyen su ingreso y se estanca en el rubro de comida rápida mientras que los hombres continúan aumentando.
+
+#### Grafico ingreso X genero X rubro
+```{r, echo=FALSE}
+promedios_ingreso_genero <- aggregate(ingreso ~ rubro + genero, data = ventas, FUN = mean)
+
+ggplot(promedios_ingreso_genero, aes(x = genero, y = ingreso, fill = (rubro))) +
+  ggtitle("Ingreso por genero en rubro") +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  facet_grid(~rubro)
+```
+##### R- Vemos cómo los rubros de mayor ingresos en hombres son el vestuario seguido de aliemnto y abarrotes. En mujeres dónde más ganan es en vestuario y en comida rápida. Igualmente se observa que los hombres ganan más que las mujeres en todos los rubros. Esto indica que la brecha de ingreso no es propia sólo de un rubro.
+
+#### Grafico transacciones x rubro
+```{r, echo=FALSE}
+promedios_ingreso_rubro <- aggregate(ingreso ~ rubro + transacciones + genero, data = ventas, FUN = mean)
+
+ggplot(promedios_ingreso_rubro, aes(x = transacciones, y = ingreso, fill = (rubro))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  facet_grid(rubro~genero)
+```
+##### -R Vemos como el tubro de alimentos y abarrotes es por lejos el que más transacciones genera, inidcando que los montos transados son pequeños. En cuanto a vestuario las muejeres llegan a hacer mayor númeor de transacciones que los hombres, dado que su ingreso es menor entonces esto indica que los porductos que tienden a vender son más baratos que los vendidos por hombres.
+
+#### Conclusiones P1
+
+##### C- Vemos como a pesar de que al comparar las mismas edades las muejres tienden a trabajar más que los hombres, su ingreso actúa de manera contraria.
+El observar los números de transacciones se puede inferir que uno de los motivos es porque las muejeres venden sus productos a menores precios. Otro motivo puede ser que las muejres trabajen en horarios menos productivos ya que su ingreso por hora es menor. A su vez se nota como las muejres disminuyen su porductividad en el tiempo mientras que los hombres la mantienen. La brecha de ingreso no estpa explicada directamente por rubro ya que en todos ellos los hombres ganan más que las muejeres.
+
+#### Pregunta 2
+
+(1.0 puntos) Proponga al menos dos especificaciones alternativas para modelos de regresión lineal que permitan examinar cuantitativamente el tamaño de la brecha de género y compare sus resultados con respecto a un modelo que solo incluye el género como variable explicativo. Para cada modelo indique el signo esperado del efecto y justifique las diferencias encontradas entre los modelos.
+
+```{r, echo=FALSE}
+ruta_archivo <- "C:\\Users\\crrfo\\Desktop\\bases\\mersample.csv"
+mersample <- read_delim(ruta_archivo, delim = ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r, echo=FALSE}
+m1<- lm(log(ingreso) ~ genero , data = subset(mersample, mersample$ingreso < 1000000))
+m2<- lm(log(ingreso) ~ genero * hrs_trabajadas , data = subset(mersample, mersample$ingreso < 1000000))
+m3<- lm(log(ingreso) ~ genero * hrs_trabajadas + antiguedad, data =subset(mersample, mersample$ingreso < 1000000))
+
+m4 <- feols(log(ingreso) ~ genero + log(transacciones) + hrs_trabajadas, data = subset(mersample, mersample$ingreso < 1000000))
+m5 <- feols(log(ingreso) ~ genero + log(transacciones) + hrs_trabajadas + antiguedad | rubro,data = subset(mersample, mersample$ingreso < 1000000))
+
+```
+
+
+
+```{r, echo=FALSE}
+modelsummary(list(M1=m1), 
+             fmt = 2,
+             estimate  = "{estimate}{stars}({std.error})",
+             statistic = NULL,
+             gof_map = c("nobs", "r.squared", "adj.r.squared", "rmse"))
+
+
+modelsummary(list(M3=m3), 
+             fmt = 2,
+             estimate  = "{estimate}{stars}({std.error})",
+             statistic = NULL,
+             gof_map = c("nobs", "r.squared", "adj.r.squared", "rmse"))
+
+fe.results <- etable(m5, digits="r2", digits.stats="r3", fitstat=c("n","r2","aic"))
+
+fe.results %>%
+  kbl(caption = "Regressions with Fixed Effects") %>%
+  kable_classic(full_width = F, html_font = "Trebuchet MS")
+```
+
+#### Conclusiones P2
+
+##### C- Modelo 1 base: En promedio, las mujeres tienen un ingreso un 14% menor al de los hombres. Igualmente, al tener un R ajustado bajo del 0.2%, vemos que el género es poco explicativo en la variabilidad del ingreso. Esto indica que, a pesar de tener ingresos diferentes de base para cada género, la variación de los mismos no está afectada por el género. Así, otros factores no incluidos en el modelo pueden tener un impacto más significativo en el ingreso.
+
+M3: Al añadir las variables de horas trabajadas, antigüedad y la interacción de género con horas trabajadas, se observa cómo la capacidad de predicción del modelo aumenta significativamente, llegando a un 49.2% de capacidad de predicción y con un error de 1 unidad porcentual en el ingreso, lo que es razonable. Vemos cómo la cantidad de horas trabajadas explica un 13% del ingreso total. Si bien concuerda con la lógica que se puede imaginar, su efecto es menor de lo esperado.
+
+Vemos cómo la interacción entre género y horas trabajadas no tiene un efecto significativo en el ingreso; esto indica que un aumento de 1 hora trabajada afectará porcentualmente igual en ambos sexos. Así, la brecha observada en el gráfico "Ingreso por horas trabajadas a la semana" entre géneros no es significativa.
+
+M5: Se decide trabajar con el paquete fixest para tratar los errores fijos. Además, se agrega al modelo las transacciones, siendo esta una variable significativa, como también antigüedad y su variación por rubro, lo que aumenta el R cuadrado. Ahora se logra un R cuadrado del 74.8%, lo que indica un gran poder explicativo. Esto se debe a la variable de número de transacciones, que tiene una relación casi 1 a 1 con el ingreso, lo que es lógico. Se observa que las horas trabajadas ahora pierden poder de efecto sobre el ingreso. Al estar controlando por rubro, se puede concluir que el rubro no es una causa de la diferencia de ingreso. Finalmente, se concluye que si el número de transacciones es el mayor explicador del ingreso y las mujeres ganan de base un 12% menos que los hombres, se puede inferir que las mujeres están vendiendo menos unidades que los hombres, o si venden las mismas, lo hacen a un precio menor.
+
+Hay muchas posibles causas de esto; una puede ser que el horario en que trabajan las mujeres, debido a temas de seguridad o la necesidad de llevar a sus hijos al colegio temprano, hace que se pierdan las horas más rentables del día. Otra conjetura puede ser que los hombres elijan ubicaciones mejores que las mujeres, posiblemente debido a una mayor capacidad física para competir por un espacio. Estas son solo conjeturas sobre las posibles razones que pueden estar causando las diferencias mostradas.
+
+
+### Pregunta 3
+
+(1.0 puntos) Utilice mecanismos automáticos de selección de variables para refinar los resultados de la pregunta anterior y discuta cuál de todas las especificaciones es la que mejor describe los ingresos pobservados. 
+
+
+#### Utilizamos primero selección automática de variables con enofque backward y foreward:
+
+```{r, echo=FALSE}
+#Variable Selection
+backregr <- step(lm(log(ingreso)~., data= subset(mersample, mersample$ingreso < 1000000)), direction="backward", trace=0) 
+forwregr <- step(lm(log(ingreso)~., data= subset(mersample, mersample$ingreso < 1000000)), direction="forward", trace=0)  
+
+modelsummary(list(backwards=backregr, forward=forwregr), 
+             fmt = 2,
+             estimate  = "{estimate}{stars}({std.error})",
+             statistic = NULL,
+             gof_map = c("nobs", "r.squared", "adj.r.squared", "rmse"))
+
+```
+
+ 
+##### C- Con los resutados de la selección automática de variables, se puede observar que este modelo no es mejor que los plantedos anteriormente, por lo que no se podría considerar como mejor. Así mimso, ninguno de los des onfoques (backward y froward) es notablmente más agresivo al eliminar variables. EL planteado previament tiene un R ajustado de 74.8% vs un 65.6%. Se decide trabajar con el modelo anterior.
+
+
+
+#### Ahora utilizamos ridge y LASSO:
+
+```{r, echo=FALSE}
+
+x <- as.matrix(mersample[,c(1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17)])
+y <- as.matrix(mersample[,8]) #ESTA ES LA COLUMNA DEL INGRESO 
+
+ridgemodel = glmnet(x, y, alpha=0, lambda=0.05)
+lassomodel = glmnet(x, y, alpha=1, lambda=0.05)
+
+coef <- data.frame(ridge=coef(ridgemodel)[,1],
+                   lasso=coef(lassomodel)[,1])
+coef %>%
+  kbl(caption = "Coefficients from Ridge and LASSO regressions") %>%
+  kable_classic(full_width = F, html_font = "Trebuchet MS")
+```
+
+
+
+##### C- Observamos como zona, semana_año, rubro, hrs_diarias, transacciones_hr, ingreso_hr: En ambas regresiones Ridge y LASSO, estos coeficientes son cero, lo que sugiere que estas variables no tienen un impacto significativo en la variable objetivo y pueden ser eliminadas del modelo sin afectar en gran medida la calidad de las predicciones.
+
+semana, año, edad, genero, dias_trabajados, antiguedad, transacciones, cuarentena1, hrs_trabajadas: Estas variables tienen coeficientes distintos de cero en ambas regresiones. Dado que las únicas variables relevantes que pueden ser diferntes entre géneros son genero, antiguedad, transacciones, hrs_tabjadas y días trabajdos, vemos que puede ser valioso hacer un modelo de regresion considerando estas 5 variables. 
+
+Ninguno de los dos modelos es más agresivo eliminando variables.
+
+### Pregunta 4
+
+(1.0 puntos) Proponga ahora un modelo de regresión lineal que permita explicar el efecto del género en las horas trabajadas y un modelo que permita explicar el efecto del género en los ingresos por hora. Discuta la relación de estas variables dependientes con el ingreso semanal explorado en la Pregunta 2.
+
+```{r, echo=FALSE}
+#lm 2
+m_1<- lm(log(ingreso) ~ genero * hrs_trabajadas + antiguedad * rubro + log(transacciones), data = subset(mersample, mersample$ingreso < 1000000))
+
+m_2<- lm(hrs_trabajadas ~ genero + antiguedad * rubro + log(transacciones), data = subset(mersample, mersample$ingreso < 1000000))
+
+
+modelsummary(list(M1=m_1, M2=m_2), 
+             fmt = 2,
+             estimate  = "{estimate}{stars}({std.error})",
+             statistic = NULL,
+             gof_map = c("nobs", "r.squared", "adj.r.squared", "rmse"))
+```
+
+Notemos que al proponer estos 2 nuevos modelos de regresión lineal, se observa que el R cuadrado crece a valores mayores de 0.749, se explica un 74.9% de la variabilidad de ingresos en todas las varables, mucho mejor que las regresiones anteriores que se tenian, se ve la mejora. 
+
+Luego con respecto a las horas trabajadas, se tiene que el modelo propuesto explica mejor que cualquier otro anterior con respecto a la causa de las horas trabajadas y el género. 
+Tenemos además que aumentar 1 punto porcentual en horas trabajadas nos aumenta 9.84% lastransacciones, es decir, más horas trabajadas más transacciones habrán, cosa que se corresponde con la lógica.
+
+
+### Pregunta 5
+
+(1.0 puntos) Use al menos dos de los modelos de aprendizaje de máquinas que vimos en clases (MARS, kNN, regression tree, random forest) para describir el nivel de ingresos de los comercios. Compare sus resultados con los derivados de los modelos anteriores. Además, utizando el o los modelos que les parezcan adecuados, realice un pronóstico del ingreso semanal de un vendedor para cada rubro y género.
+
+```{r, echo=FALSE}
+#USAREMOS MARS Y KNN
+#ML models
+#Dividir dataset
+mersample <- mersample %>%
+  mutate(log_ingreso= log(ingreso))
+
+s.train <- sample(1:nrow(mersample), size=round(0.8*nrow(mersample),0))
+
+data.train <- mersample[s.train,]
+data.test  <- mersample[-s.train,]
+```
+
+```{r, echo=FALSE}
+train.mars <-train(log(ingreso) ~ genero + hrs_trabajadas + log(transacciones) + rubro*antiguedad, data=data.train, method="earth",
+                   trControl = trainControl("cv", number=10),
+                   preProcess = c("center","scale"),
+                   tuneLength = 5
+)
+ggplot(train.mars)
+```
+
+```{r, echo=FALSE}
+
+test.mars  <- predict(train.mars, newdata=data.test)
+error.mars <- data.test$log_ingreso-test.mars 
+```
+
+```{r, echo=FALSE}
+train.cart <- train(log(ingreso) ~ genero + hrs_trabajadas + log(transacciones) + rubro*antiguedad, data = data.train, method="rpart2",  
+                   trControl = trainControl("cv", number=10),
+                   preProcess = c("center","scale"),
+                   tuneGrid = expand.grid(maxdepth=c(4,5,6,7,8))
+)
+ggplot(train.cart)
+
+```
+
+```{r, echo=FALSE}
+test.cart <- predict(train.cart, newdata=data.test)
+error.cart <- data.test$log_ingreso-test.cart 
+
+```
+```{r, echo=FALSE}
+
+error.test <- data.frame(mars=unname(error.mars),
+                         cart=error.cart)
+
+boxplot(error.test); title(main="ML models", sub="Forecasting Errors")
+```
+```{r, echo=FALSE}
+boxplot(abs(error.test)); title(main="ML models", sub="Forecasting Absolute Errors")
+```
+
+```{r, echo=FALSE}
+summary(abs(error.test))
+st(abs(error.test))
+
+```
+Se utiliza MARS y CART ya que son los que necesitan menos recursos computacionales. Podemos notar que tomando la metrica los errores standar, MARS cuenta con el menor error standar (0.40818)con respecto a CART (0.52039). Por lo tanto, bajo este criterio y comparando los modelor se recomienta utilizar MARS.
+
+## Resumen
+
+(1.0 puntos) Discuta de las ventajas de cada modelo y resuma sus aprendizajes principales en un máximo de 4 tablas o figuras. Redacte de manera concisa sus resultados tal como los reportaría a una contrparte técnica a cargo de tomar decisiones. Agregue cualquier conclusión o idea que le parezca relevante de comunicar.
+
+
+```{r, echo=FALSE}
+promedios_ingreso_rubro <- aggregate(ingreso ~ rubro + antiguedad + genero, data = ventas, FUN = mean)
+
+ggplot(promedios_ingreso_rubro, aes(x = antiguedad, y = ingreso, fill = (rubro))) +
+  ggtitle("Ingreso por antiguedad en rubro") +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  facet_grid(rubro~genero)
+```
+Con este gráfico podemos observar la diferencia de ingresos entre hombres y muejres inicia similar entre rubros pero con el paso del tiempo varía según sexo. Al observar difenrecias de ingresos diferentes entre todos los rubros a lo largo del tiempo se observa cómo hay factores no observados que explcarian la diferncia de ingresos y que esos factores pueden estar asociado a caraterísticas de ciertos rubros y cómo cada genero actúa en él.
+
+Sabemos que hay una difernecia del 13.4% en el ingreso entre hombres y muejeres, siendo los hombres quienes más ganan. Por otro lado,
+los hombres tienen mayor ingreso por hora que las mujeres y ambos trabajan cantiades similares de horas. Se sabe que trabajar una hora más afecta proporcionalmente igual a los ingresos de hombres y mujeres.
+
+```{r, echo=FALSE}
+
+modelsummary(list(M3=m3,M5=m5,M_1=m_1,M_2=m_2), 
+             fmt = 2,
+             estimate  = "{estimate}{stars}({std.error})",
+             statistic = NULL,
+             gof_map = c("nobs", "r.squared", "adj.r.squared", "rmse"))
+```
+
+Vemos que el modelo M_2 que busca predecir el ingreso por hora es el que posee mejor poder explicativo. Si bien no predice la variable de ingreso total, si predice la de ingreso por hora lo que construye el ingreso total. Se observa que la cantidad de horas no genera la diferencia de ingresos entre sexos y todo indica que el número de transacciones es el mayor explicador de diferencias en el ingreso por hora y total. Los rubros con mayor influencia en disminuir el ingreso por hora son comida rápida seguido de vestuario, luego retail y por último oficios y otrs oficios. Las diferencias de ingreso por género provienen mayormente de una difenrencia en la cantidad máxima de transacciones, factor que puede verse influido pr rubro siendo los rubros en dónde cada transaccion es menor los que tienden a generar menor ingreso.
+
+ A su vez, se observa que el factor del género puede estar generando la diminusión en el número de transacciones.
+
+Después de todo se concluye que la diferencia del 13.4% entre ingreso de hombres y mujeres no se puede explicar del todo con estos datos, sin embargo se sabe que proviene de diferencias al interior de cada rubro asociadas a cada sexo las cuales afectan el número de transacciones totales. Así, una estraegia para aumentar el ingreso es dedicarse a rubros en dónde el pago promedio sea mayor como oficios y otros servicios. De esta manera se disminuye el efecto del número de transacciones en el ingreso y por lo tanto se disminuye el efecto de la brecha de género.
+
+
+Podemos hacer conjeturas en la diferencia de transacciones producida en el rubro de comida rápida por ejemplo. Se puede deber a dificultades para trabjar en horarios más prodictivos como horas punta por parte de mujeres ya que pueden necesitar ir a dejar y buscar sus hijos al colegio, puede ser por una peor posicionamiento en la ciudad producto de que el hombre lucha más por los espacios. Estos son solo algunas posibilidades pero sólo con estos datos es dificil entender cual es la raíz del problema.
+
+
+Se propone hacer un estudio específicamente sobre que factores hacen que una persona realice más transacciones y las diferencias entre cada genero al realizar esas acciones, buscando casusas de porque un genero las realiza con mayor éxito que el otro.
+
+
+```{r, echo=FALSE}
+library(vtable)
+st(abs(error.test))
+
+```
+En este caso, tenemos que comparando, MARS produce el menor error. Es posible que con diferentes modelos con más parámetros esto varíe.
+Es posible también modificar los parámetros a los que se somete el entrenamiento, así como la distribución de los datos de entrenamiento y testeo.
+
+
+## Anexos
+
+Documenta acá cualquier otro adicional que consideres útil tener de referencia. 
+

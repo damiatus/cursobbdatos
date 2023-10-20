@@ -1,4 +1,4 @@
-use p2;
+
 
 #p1
 SELECT dob
