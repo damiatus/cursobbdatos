@@ -1,13 +1,13 @@
--- Drop the database if it exists
-DROP DATABASE IF EXISTS naruto;
+
+#DROP DATABASE IF EXISTS naruto2;
 -- Create the database
-CREATE DATABASE naruto;
+#CREATE DATABASE naruto;
 -- Use the newly created database
-USE naruto;
+#USE naruto;
 
 -- MariaDB dump 10.19  Distrib 10.7.3-MariaDB, for Win64 (AMD64)
 --
--- Host: 127.0.0.1    Database: naruto_v1
+-- Host: 127.0.0.1    Database: naruto2_v1
 -- ------------------------------------------------------
 -- Server version	10.7.3-MariaDB
 
