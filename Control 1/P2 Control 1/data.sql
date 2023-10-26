@@ -4,10 +4,13 @@
 -- ------------------------------------------------------
 -- Server version	10.1.48-MariaDB-0+deb9u2
 <<<<<<< HEAD
+<<<<<<< HEAD
 create database p2C1;
 use p2 c1;
 =======
 >>>>>>> 38156dd (Cargamos base de daros f1 y eliminamos la base naruto)
+=======
+>>>>>>> 38156dd9d63a93240bce3f3d7efc29c380294522
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
